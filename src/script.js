@@ -48,6 +48,10 @@ let duration;
 let activeItem;
 let currentTime = 0;
 let playbackInterval;
+let ctaInstance = {
+	'clicked' : false,
+	'index' : null
+};
 // let VIDEO_ID = '6CgrVt3BGqY';
 let VIDEO_ID = 'S8P5wDv1_1g';
 
@@ -71,7 +75,7 @@ let VIDEO_OBJ = {
 	suggestedQuality: 'hd720'
 }
 
-const segmentDuration = 3;
+const segmentDuration = 4;
 const segments = [
 	segmentDuration*0,
 	segmentDuration*1,
@@ -96,11 +100,23 @@ function documentReady () {
 
 		setTimeout(() => {
 			$heroPlate.addClass('animated');
-		}, 4000)
+		}, 2000)
+
+		// Sets the data of the current clicked item,
+		// Flags clicked to true so we can reuse the old method tracking
+		// the original flow of the video timeline
+		ctaInstance.clicked = true;
+		ctaInstance.index = $('.hero__cta__button').data('index');
 	})
 
 	// For HTML 5 Version only
 	playbackInterval = setInterval(onTimeUpdate, 100);
+
+	$('.hero__plate').on('transitionend', function() {
+		$('.hero__plate > img').hide();
+		$('.hero__plate > video').addClass('animated');
+		$('.hero__plate > video')[0].play();
+	})
 }
 
 
@@ -149,23 +165,46 @@ function documentReady () {
 
 // FOR HTML 5 VERSION
 function onTimeUpdate() {
-	currentTime = player[0].currentTime;
-	switch( true ) {
-		case (currentTime >= segments[2]):
-			activateItem(2);
-			break;
-		case (currentTime >= segments[1]):
-			activateItem(1);
-			break;
-		default:
-			activateItem(0);
-	}
+	if ( !ctaInstance.clicked ) {
+		currentTime = player[0].currentTime;
+		switch( true ) {
+			case (currentTime >= segments[2]):
+				activateItem(2);
+				break;
+			case (currentTime >= segments[1]):
+				activateItem(1);
+				break;
+			default:
+				activateItem(0);
+		}
 
-	updateProgessBar();
+		updateProgessBar();
+	} else {
+		currentTime = player[0].currentTime;
+		switch ( ctaInstance.index ) {
+			case 0 :
+				if ( currentTime >= (segments[1] - 1 ) ) {
+					player[0].currentTime = segments[0] + 0.5;
+				}
+				break;
+			case 1 :
+				if ( currentTime >= (segments[2] - 1 ) ) {
+					player[0].currentTime = segments[1] + 0.5;
+				}
+				break;
+			case 2 :
+				if ( currentTime >= (parseInt(player[0].duration) - 1) ) {
+					player[0].currentTime = segments[2] + 0.5;
+				}
+				break;
+		}
+	}
 }
 
 function activateItem( itemIndex ) {
 	if ( itemIndex === activeItem ) return;
+
+	$('.hero__cta__button').attr('data-index', itemIndex);
 
 	$titles.filter('.active')
 		// Remove active class
